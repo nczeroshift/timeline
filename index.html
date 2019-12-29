@@ -1,4 +1,4 @@
-<html>
+﻿<html>
     <head>
         <meta charset="UTF-8">
         <title>Temp</title>
@@ -13,9 +13,10 @@
         }
         
         .timelineEditor{
-            position:relative;
-            width:600px;
-            height:400px;
+            position:absolute;
+            width:100%;
+            bottom:0;
+            top:24px;
             background-color:#CCC;
             overflow:hidden;
         }
@@ -23,7 +24,7 @@
         .timeline{
             height:24px;
             background-color:#999;
-            width:600px;
+            width:100%;
         }
         
         .timeline.canDrag{
@@ -71,7 +72,7 @@
     
     <body>
    
-    <div style="margin-left:10px;margin-top:10px;">
+    <div style="width:100%;height:100%;">
         <div class="timeline">
             <canvas></canvas>
         </div>
@@ -200,27 +201,35 @@
                     var o_y = parseInt(s.attr("data-o_y"));
                     var o_w = parseInt(s.attr("data-o_w"));
                     
+                    var update_t = false;
+                    var update_dur = false;
+
                     if(s.hasClass("rightDrag")){
-                        s.css({width:x-o_x});
+                        s.css({ width: x - o_x });
+                        update_dur = true;
                     }                    
                     else if(s.hasClass("leftDrag")){
                         var o_end = o_x + o_w;
                         var n_x = o_x + (x-dom_o_x);
                         s.css({width: o_end - n_x});
-                        s.css({left: n_x});
+                        s.css({left: n_x });
+                        update_t = true;
+                        update_dur = true;
                     }
                     else{
                         var y = Math.floor((o_y + (y - dom_o_y)) / 20) * 20;   
                         if(y < 0) y = 0;
                         s.css({top:y});
-                        s.css({left:o_x + (x-dom_o_x)});
+                        s.css({left: o_x + (x - dom_o_x)});
+                        update_t = true;
                     }
+
                     
                     var w = parseInt(s.css("width"));
                     var x = parseInt(s.css("left"));
                     var y = parseInt(s.css("top"))
-                    s.attr("data-t",(x / pixelsPerSecond) + start);
-                    s.attr("data-duration",w / pixelsPerSecond);
+                    if(update_t)s.attr("data-t",(x / pixelsPerSecond) + start);
+                    if(update_dur)s.attr("data-duration",w / pixelsPerSecond);
                     s.attr("data-track",Math.floor(y/20));
                 }
             });
@@ -253,32 +262,34 @@
                 }
             });
             
-            
-            $(".timeline")[0].addEventListener("wheel", function(e){
+            function mouseWheelEvent(e) {
                 var self = $(this);
                 var off = self.offset();
                 var x = e.pageX - off.left;
                 var y = e.pageY - off.top;
-                
+
                 var w = self.width();
                 var pixelsPerSecond = w / dur;
-                 
+
                 var cursor_t = start + x / pixelsPerSecond;
-                
+
                 var distance_t = cursor_t - start;
                 var ndist_t = event.deltaY > 0 ? distance_t * 1.5 : distance_t / 1.5;
                 var nstart = cursor_t - ndist_t;
-                
+
                 var dx = x / w;
-                
-                var ndist_rem = (1-dx) * (ndist_t) / dx;
-                
+
+                var ndist_rem = (1 - dx) * (ndist_t) / dx;
+
                 start = nstart;
                 dur = ndist_t + ndist_rem;
-                                
+
                 $(window).trigger("resize");
-            });
+            }
             
+            $(".timeline")[0].addEventListener("wheel", mouseWheelEvent);
+            dom[0].addEventListener("wheel", mouseWheelEvent);
+
             $(window).trigger("resize");
         });
         
@@ -393,8 +404,20 @@
             
             ctx.fillStyle  = "#0009";
             
+            var durationWidth = ctx.measureText("00:00").width;
+
+            var steps = 1.0;
+            if ((width * 60.0) / duration < durationWidth + 10)
+                steps = 120.0;
+            else if ((width * 30.0) / duration < durationWidth + 10)
+                steps = 60.0;
+            else if ((width*10.0) / duration < durationWidth + 10)
+                steps = 30.0;
+            else if (width / duration < durationWidth + 10)
+                steps = 10.0;
+
             var last_x = -100;
-            for(var t = Math.floor(start / 1.0) * 1.0; t < start + duration; t += 1.0){
+            for (var t = Math.floor(start / steps) * steps; t < start + duration; t += steps) {
                 var x = (t - start) * pixelsPerSecond;
                 if(x < 0) continue;
                 
@@ -410,7 +433,6 @@
                 var text = pad(minutes) + ":" + pad(seconds);
                 var width = ctx.measureText(text).width;
                 x -= width/2;
-                //if(x < last_x) continue;
                 last_x = x + width+10;
                 ctx.fillText(minus_str+text, x, 10);
             }
