@@ -2,7 +2,9 @@
     <head>
         <meta charset="UTF-8">
         <title>Temp</title>
-        <script type="text/javascript" src="jquery-1.6.4.min.js"></script> 
+        <script type="text/javascript" src="jquery-1.6.4.min.js"></script>
+        <script type="text/javascript" src="timeline.js"></script>
+        <link rel="stylesheet" type="text/css" href="timeline.css">
     </head>
     
     <style type="text/css">
@@ -12,432 +14,49 @@
             font-family: sans-serif;
         }
         
-        .timelineEditor{
-            position:absolute;
-            width:100%;
-            bottom:0;
-            top:24px;
-            background-color:#CCC;
-            overflow:hidden;
+        .tlTest {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
         }
-        
-        .timeline{
-            height:24px;
-            background-color:#999;
-            width:100%;
-        }
-        
-        .timeline.canDrag{
-            cursor:ew-resize;
-        }
-        
-        .timeline canvas{
-            width:100%;
-            height:100%;
-        }
-        
-        .segment{
-            position:absolute;
-            height:20px;
-        }
-        
-        .segment .inner{
-            left:0;
-            top:0;
-            bottom:0;
-            right:0;
-            position:absolute;
-            border-left:5px solid #666;
-            border-right:5px solid #666;
-            border-top:1px solid #666;
-            border-bottom:1px solid #666;
-            background-color:#DDD;
-            text-align:center;
-            overflow:hidden;
-            user-select: none;
-            font-size: 10px;
-            line-height: 2em;
-            cursor:pointer;
-        }
-        
-        .segment.selected .inner{
-            background-color:#999;
-        }
-        
-        .timelineEditor canvas{
-            position:absolute;
-        }
-        
     </style>
     
     <body>
    
-    <div style="width:100%;height:100%;">
-        <div class="timeline">
+    <div class="tlTest tl">
+        <div class="tlTrack">
             <canvas></canvas>
         </div>
-        <div class="timelineEditor">
+        <div class="tlEditor">
             <canvas></canvas>
-            <div class="segment" data-t="0" data-duration="1">
-                <div class="inner">scene1</div>
-            </div>
-            <div class="segment" data-t="1" data-duration="1.5" data-track="1">
-                <div class="inner">scene2</div>
-            </div>
-            <div class="segment" data-t="1.5" data-duration="1" data-track="2">
-                <div class="inner">scene3</div>
-            </div>
         </div>
     </div>
     
     <script type="text/javascript">
-    
-        var start = 0;
-        var dur = 5;
+        var timeline = null;
+
+        $(function () {
+            timeline = new Timeline($(".tl"));
+
+            timeline.addSegment("a1", 1, 2, 1, "1");
+            timeline.addSegment("a2", 2, 2, 2, "2");
+            timeline.addSegment("a3", 3, 2, 3, "3");
+            timeline.addSegment("a4", 4, 2, 4, "4");
+
+            var wnd = $(window);
             
-        function attachDragEvents(dom){
-            var segs = dom.find(".segment");
-            
-            for(var i = 0; i < segs.length; i++)
-            {
-                var s = $(segs[i]);
-                
-                s.bind("mousedown", function(e){
-                    var self = $(this);
-                    var w = self.width();
-                    
-                    var dOff = dom.offset();
-                    var off = self.offset();
-                    var x = e.pageX - off.left;
-                    var y = e.pageY - off.top;
-                    
-                    self.removeClass("leftDrag");
-                    self.removeClass("rightDrag");
-                    
-                    self.attr("data-o_x", parseInt(off.left-dOff.left));
-                    self.attr("data-o_y", parseInt(off.top-dOff.top));
-                    self.attr("data-o_w", parseInt(w));
-                    
-                    if(x < 5)
-                        self.addClass("leftDrag");
-                    else if(x > w -5)
-                        self.addClass("rightDrag");
-                    
-                    $(this).addClass("selected");
-                });               
-            }
-        }
-        
-        function updateSegments(dom){
-            var segs = dom.find(".segment");
-            var width = dom.width();
-            var pixelsPerSecond = width / dur;
-            
-            for(var i = 0; i < segs.length; i++)
-            {
-                var s = $(segs[i]);
-                var seg_t = parseFloat(s.attr("data-t"));
-                var seg_d = parseFloat(s.attr("data-duration"));
-                var seg_trackId = !s.attr("data-track") ? 0 : parseInt(s.attr("data-track"));
-               
-                var x = (seg_t-start) * pixelsPerSecond;
-                var w = seg_d * pixelsPerSecond;
-                
-                s.css({left: x, width: w, top: seg_trackId * 20});
-            }
-        }
-        
-        $(document).ready(function(){  
-            var dom = $(".timelineEditor");
-                       
-            attachDragEvents(dom);
-                 
-            function finish(e){
-                var segs = dom.find(".segment");
-                segs.removeClass("leftDrag");
-                segs.removeClass("rightDrag");
-                segs.removeClass("selected");
-                segs.attr("data-o_x", null);
-                segs.attr("data-o_y", null);
-                segs.attr("data-o_w", null);
-            }
-            
-            dom.bind("mousedown", function(e){
-                var self = $(this);
-                    
-                var off = self.offset();
-                var x = e.pageX - off.left;
-                var y = e.pageY - off.top;
-                
-                self.attr("data-o_x", parseInt(x));
-                self.attr("data-o_y", parseInt(y));
-                
+            timeline.setChangeCallback(function (id, t, dur, track) {
+                console.log(id, t, dur, track);
+            })
+
+            wnd.resize(function () {
+                timeline.resize();
             });
-            
-            dom.bind("mouseup", function(e){
-               finish(e);
-            });
-            
-            dom.bind("mouseleave", function(e){
-               finish(e);
-            });
-            
-            dom.bind("mousemove", function(e){
-                var off = $(this).offset();
-                var x = e.pageX - off.left;
-                var y = e.pageY - off.top;
-                
-                var dom_o_x = parseInt($(this).attr("data-o_x"));
-                var dom_o_y = parseInt($(this).attr("data-o_y"));
-                    
-                var segs = $(this).find(".segment.selected");
-                
-                var width = $(this).width();
-                var pixelsPerSecond = width / dur;
-            
-                for(var i = 0;i < segs.length; i++){
-                    var s = $(segs[i]);
-                    var o_x = parseInt(s.attr("data-o_x"));
-                    var o_y = parseInt(s.attr("data-o_y"));
-                    var o_w = parseInt(s.attr("data-o_w"));
-                    
-                    var update_t = false;
-                    var update_dur = false;
 
-                    if(s.hasClass("rightDrag")){
-                        s.css({ width: x - o_x });
-                        update_dur = true;
-                    }                    
-                    else if(s.hasClass("leftDrag")){
-                        var o_end = o_x + o_w;
-                        var n_x = o_x + (x-dom_o_x);
-                        s.css({width: o_end - n_x});
-                        s.css({left: n_x });
-                        update_t = true;
-                        update_dur = true;
-                    }
-                    else{
-                        var y = Math.floor((o_y + (y - dom_o_y)) / 20) * 20;   
-                        if(y < 0) y = 0;
-                        s.css({top:y});
-                        s.css({left: o_x + (x - dom_o_x)});
-                        update_t = true;
-                    }
-
-                    
-                    var w = parseInt(s.css("width"));
-                    var x = parseInt(s.css("left"));
-                    var y = parseInt(s.css("top"))
-                    if(update_t)s.attr("data-t",(x / pixelsPerSecond) + start);
-                    if(update_dur)s.attr("data-duration",w / pixelsPerSecond);
-                    s.attr("data-track",Math.floor(y/20));
-                }
-            });
-                        
-           
-            $(".timeline").bind("mousedown", function(e){
-                var self = $(this);
-                var off = self.offset();
-                var x = e.pageX - off.left;
-                var y = e.pageY - off.top;
-                self.attr("data-o_x", parseInt(x));
-                self.attr("data-o_y", parseInt(y));
-                self.attr("data-o_start", start);
-                self.addClass("canDrag");
-            }).bind("mouseup", function(e){
-                $(this).removeClass("canDrag");
-            }).bind("mouseleave", function(e){
-                $(this).removeClass("canDrag");
-            }).bind("mousemove", function(e){
-                var self = $(this);
-                if(self.hasClass("canDrag")){
-                    var off = self.offset();
-                    var x = e.pageX - off.left;
-                    var o_x = parseInt(self.attr("data-o_x"));
-                    var d_x = x - o_x;
-                    var w = self.width();
-                    var pixelsPerSecond = w / dur;
-                    start = parseFloat(self.attr("data-o_start")) - d_x / pixelsPerSecond;
-                    $(window).trigger("resize");
-                }
-            });
-            
-            function mouseWheelEvent(e) {
-                var self = $(this);
-                var off = self.offset();
-                var x = e.pageX - off.left;
-                var y = e.pageY - off.top;
-
-                var w = self.width();
-                var pixelsPerSecond = w / dur;
-
-                var cursor_t = start + x / pixelsPerSecond;
-
-                var distance_t = cursor_t - start;
-                var ndist_t = event.deltaY > 0 ? distance_t * 1.5 : distance_t / 1.5;
-                var nstart = cursor_t - ndist_t;
-
-                var dx = x / w;
-
-                var ndist_rem = (1 - dx) * (ndist_t) / dx;
-
-                start = nstart;
-                dur = ndist_t + ndist_rem;
-
-                $(window).trigger("resize");
-            }
-            
-            $(".timeline")[0].addEventListener("wheel", mouseWheelEvent);
-            dom[0].addEventListener("wheel", mouseWheelEvent);
-
-            $(window).trigger("resize");
+            wnd.trigger("resize");
         });
-        
-        $(window).resize(function(e){      
-            var editor =          $(".timelineEditor");
-            renderTimeline( $(".timeline"), start, dur);
-            renderArea(editor, start, dur);
-            updateSegments(editor);
-        });
-               
-        function setupCanvas(canvas) {
-            // Get the device pixel ratio, falling back to 1.
-            var dpr = window.devicePixelRatio || 1;
-            // Get the size of the canvas in CSS pixels.
-            
-            var rect = canvas.getBoundingClientRect();
-            // Give the canvas pixel dimensions of their CSS
-            // size * the device pixel ratio.
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            var ctx = canvas.getContext('2d');
-            // Scale all drawing operations by the dpr, so you
-            // don't have to worry about the difference.
-            ctx.scale(dpr, dpr);
-            return ctx;
-        }
-        
-        
-        function renderTrace(ctx, start, duration, height, pixelsPerSecond, step, y){
-            if(y == undefined) y = 0;
-            for(var t = Math.floor(start / step) * step; t < start + duration; t += step){
-                var x = (t - start) * pixelsPerSecond;
-                if(x < 0) continue;
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x, height);
-                ctx.stroke();
-            }
-        }
-        
-        function renderArea(timeline, start, duration){
-            var canvas = timeline.find("canvas");
-            var width = timeline.width();
-            var height = timeline.height();
-            
-            canvas.css({width: width, height: height});
-        
-            var ctx = setupCanvas(canvas[0]);
-                        
-            ctx.strokeStyle = "#BBB";
-            for(var y = 0; y < height; y += 20){
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(width, y);
-                ctx.stroke();
-            }     
-
-            var pixelsPerSecond = width / duration;
-            var draw100thSecond = duration <= 10;
-            var drawSeconds = duration <= 60;
-            
-            ctx.strokeStyle = "#A5A5A520";
-            if(draw100thSecond)
-                renderTrace(ctx, start, duration, height, pixelsPerSecond, 0.1);
-                   
-            ctx.strokeStyle = "#7772";
-            if(drawSeconds)
-                renderTrace(ctx, start, duration, height, pixelsPerSecond, 1.0);
-                
-            ctx.strokeStyle = "#5552";            
-            renderTrace(ctx, start, duration, height, pixelsPerSecond, 10);
-            
-            ctx.strokeStyle = "#0002";            
-            renderTrace(ctx, start, duration, height, pixelsPerSecond, 30);
-        }
-        
-        function pad(val){
-            return (val < 10 ? "0":"")+val;
-        }
-        
-        function renderTimeline(timeline, start, duration){
-            var canvas = timeline.find("canvas");
-            var width = timeline.width();
-            var height = timeline.height();
-            canvas.css({width: width, height: height});
-                                
-            var ctx = setupCanvas(canvas[0]);
-            
-            //var start = 0.0; // tempo em que a timeline começa
-            //var duration = 60.0;
-            var y = 14;
-            
-            var pixelsPerSecond = width / duration;
-            var draw100thSecond = duration <= 10;
-            var drawSeconds = duration <= 60;
-            var draw10Seconds = true;
-            var draw30Seconds = true;
-            
-            ctx.strokeStyle = "#A5A5A5";
-            if(draw100thSecond)
-                renderTrace(ctx, start, duration, height, pixelsPerSecond, 0.1, y);
-                   
-            ctx.strokeStyle = "#777";
-            if(drawSeconds)
-                renderTrace(ctx, start, duration, height, pixelsPerSecond, 1.0, y);
-                
-            ctx.strokeStyle = "#555";            
-            renderTrace(ctx, start, duration, height, pixelsPerSecond, 10, y);
-            
-            ctx.strokeStyle = "#000";            
-            renderTrace(ctx, start, duration, height, pixelsPerSecond, 30, y);
-            
-            ctx.fillStyle  = "#0009";
-            
-            var durationWidth = ctx.measureText("00:00").width;
-
-            var steps = 1.0;
-            if ((width * 60.0) / duration < durationWidth + 10)
-                steps = 120.0;
-            else if ((width * 30.0) / duration < durationWidth + 10)
-                steps = 60.0;
-            else if ((width*10.0) / duration < durationWidth + 10)
-                steps = 30.0;
-            else if (width / duration < durationWidth + 10)
-                steps = 10.0;
-
-            var last_x = -100;
-            for (var t = Math.floor(start / steps) * steps; t < start + duration; t += steps) {
-                var x = (t - start) * pixelsPerSecond;
-                if(x < 0) continue;
-                
-                var tt = t;
-                var minus_str = "";
-                if(tt < 0){
-                    tt = -tt;
-                    minus_str = "-";
-                }
-                
-                var minutes = Math.floor(tt / 60);
-                var seconds = Math.floor(tt) % 60;
-                var text = pad(minutes) + ":" + pad(seconds);
-                var width = ctx.measureText(text).width;
-                x -= width/2;
-                last_x = x + width+10;
-                ctx.fillText(minus_str+text, x, 10);
-            }
-            
-        }
     </script>
 
 </body>

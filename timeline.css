@@ -1,0 +1,55 @@
+.tlEditor {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    top: 24px;
+    background-color: #CCC;
+    overflow: hidden;
+}
+
+.tlTrack {
+    height: 24px;
+    background-color: #999;
+    width: 100%;
+}
+
+.tlTrack.canDrag {
+    cursor: ew-resize;
+}
+
+.tlTrack canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.tlEditor .tlSegment {
+    position: absolute;
+    height: 20px;
+}
+
+.tlEditor .tlSegment .inner {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    position: absolute;
+    border-left: 5px solid #666;
+    border-right: 5px solid #666;
+    border-top: 1px solid #666;
+    border-bottom: 1px solid #666;
+    background-color: #DDD;
+    text-align: center;
+    overflow: hidden;
+    user-select: none;
+    font-size: 10px;
+    line-height: 2em;
+    cursor: pointer;
+}
+
+.tlEditor .tlSegment.selected .inner {
+    background-color: #999;
+}
+
+.tlEditor canvas {
+    position: absolute;
+}
